@@ -11,19 +11,20 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Scanner;
+import java.util.Random;
 
 public class GenerateRandomNumbersAndSort {
-	static String fileNameForSortedNum = "sorted";
-	static String fileNameForRandomNum = "randomNumbers";
-	static String fileNameFortempData = "tempFile";
+	private static final String FILE_NAME_FOR_SORT_NUMBERS = "sorted";
+	private static final String FILE_NAME_FOR_RANDOM_NUMBERS = "randomNumbers";
+	private static final String FILE_NAME_FOR_TEMP_FILE = "tempFile";
+	private static final int MAX_VALUE = 1000000;
 
-	public static long getAvailableMemory() {
+	private static long getAvailableMemory() {
 		long availableMemory = Runtime.getRuntime().freeMemory();
 		return availableMemory;
 	}
 
-	public static List<File> createTempFile(File file) throws IOException {
+	private static List<File> createTempFile(File file) throws IOException {
 		List<File> listOfFiles = new ArrayList<File>();
 		BufferedReader fbr = new BufferedReader(new FileReader(file));
 		try {
@@ -31,20 +32,16 @@ public class GenerateRandomNumbersAndSort {
 			long blocksize = getAvailableMemory();
 			String line = "";
 			int i = 0;
-			try {
-				while (line != null) {
-					long currentBlock = 0;
-					while ((currentBlock < blocksize) && ((line = fbr.readLine()) != null)) {
-						listOfTempData.add(Integer.parseInt(line));
-						currentBlock += line.length();
-					}
-					File tempFile = saveListOfIntegerToFile(listOfTempData, fileNameFortempData + i);
-					listOfFiles.add(tempFile);
-					listOfTempData.clear();
-					i++;
+			while (line != null) {
+				long currentBlock = 0;
+				while ((currentBlock < blocksize) && ((line = fbr.readLine()) != null)) {
+					listOfTempData.add(Integer.parseInt(line));
+					currentBlock += line.length();
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
+				File tempFile = saveListOfIntegerToFile(listOfTempData, FILE_NAME_FOR_TEMP_FILE + i);
+				listOfFiles.add(tempFile);
+				listOfTempData.clear();
+				i++;
 			}
 		} finally {
 			fbr.close();
@@ -52,7 +49,7 @@ public class GenerateRandomNumbersAndSort {
 		return listOfFiles;
 	}
 
-	public static void mergeFile(List<File> listOfFiles, String fileName) throws IOException {
+	private static void mergeFile(List<File> listOfFiles, String fileName) throws IOException {
 		List<BufferedReader> listOfBufferReader = new ArrayList<BufferedReader>();
 		BufferedWriter fbw = new BufferedWriter(new FileWriter(new File(fileName)));
 		try {
@@ -62,12 +59,31 @@ public class GenerateRandomNumbersAndSort {
 				listOfBufferReader.add(br);
 				file.deleteOnExit();
 			}
-
-			for (BufferedReader fileReader : listOfBufferReader) {
+			int[] topNumber = new int[listOfFiles.size()];
+			for (int i = 0; i < listOfFiles.size(); i++) {
 				String line = "";
-				while ((line = fileReader.readLine()) != null) {
-					fbw.write(line + "\n");
+				if ((line = listOfBufferReader.get(i).readLine()) != null) {
+					topNumber[i] = Integer.parseInt(line);
 				}
+			}
+
+			for (int j = 0; j < MAX_VALUE; j++) {
+				int minNumber = Integer.MAX_VALUE;
+				int readerIndex = -1;
+				for (int i = 0; i < listOfFiles.size(); i++) {
+					if (topNumber[i] < minNumber) {
+						minNumber = topNumber[i];
+						readerIndex = i;
+					}
+				}
+				fbw.write(minNumber + "\n");
+				String nextNumber = listOfBufferReader.get(readerIndex).readLine();
+				if (nextNumber != null) {
+					topNumber[readerIndex] = Integer.parseInt(nextNumber);
+				} else {
+					topNumber[readerIndex] = Integer.MAX_VALUE;
+				}
+
 			}
 
 		} finally {
@@ -79,37 +95,20 @@ public class GenerateRandomNumbersAndSort {
 
 	}
 
-	public static File saveListOfIntegerToFile(List<Integer> listOfInteger, String fileName) throws IOException {
+	private static File saveListOfIntegerToFile(List<Integer> listOfInteger, String fileName) throws IOException {
 		Collections.sort(listOfInteger);
 		File file = new File(fileName);
 		BufferedWriter fw = new BufferedWriter(new FileWriter(file));
-		listOfInteger.forEach(e -> {
-			try {
-				fw.write(e + "\n");
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-		});
+		for (Integer value : listOfInteger) {
+			fw.write(value + "\n");
+		}
 		fw.close();
-
 		return file;
 
 	}
 
-	static String generateInput(long maxNumber) throws IOException {
-		long max = maxNumber;
-		int min = 1;
-		File file = new File(fileNameForRandomNum);
-		BufferedWriter fw = new BufferedWriter(new FileWriter(file));
-		for (int i = 1; i <= max; i++) {
-			int random_int = (int) Math.floor(Math.random() * (max - min + 1) + min);
-			try {
-				fw.write(random_int + "\n");
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-		}
-		fw.close();
+	private static void sortRandomNumbers() throws IOException {
+		File file = new File(FILE_NAME_FOR_RANDOM_NUMBERS);
 		if (file.length() < getAvailableMemory()) {
 			List<Integer> listOfRandomData = new ArrayList<Integer>();
 			BufferedReader br = new BufferedReader(new FileReader(file));
@@ -117,26 +116,30 @@ public class GenerateRandomNumbersAndSort {
 			while ((line = br.readLine()) != null) {
 				listOfRandomData.add(Integer.parseInt(line));
 			}
-			saveListOfIntegerToFile(listOfRandomData, fileNameForSortedNum);
+			br.close();
+			saveListOfIntegerToFile(listOfRandomData, FILE_NAME_FOR_SORT_NUMBERS);
 		} else {
 			List<File> listOfFiles = createTempFile(file);
-			mergeFile(listOfFiles, fileNameForSortedNum);
+			mergeFile(listOfFiles, FILE_NAME_FOR_SORT_NUMBERS);
 		}
-
-		return fileNameForRandomNum;
 	}
 
-	public static void main(String[] args) throws IOException {
+	private static void generateRandomNumbers() throws IOException {
+		File file = new File(FILE_NAME_FOR_RANDOM_NUMBERS);
+		BufferedWriter fw = new BufferedWriter(new FileWriter(file));
+		Random random = new Random();
+		for (int i = 1; i <= MAX_VALUE; i++) {
+			int randomNumber = random.nextInt(MAX_VALUE);
+			fw.write(randomNumber + "\n");
+		}
+		fw.close();
+	}
 
-		Scanner sc = new Scanner(System.in);
-		System.out.println("Enter Number:: ");
-		int input = sc.nextInt();
-
+	public static void generateAndSaveRandomNumbers() throws IOException {
 		LocalDateTime startTime = LocalDateTime.now();
 		System.out.println("Start Time:: " + startTime);
-
-		String fileName = generateInput(input);
-
+		generateRandomNumbers();
+		sortRandomNumbers();
 		LocalDateTime endTime = LocalDateTime.now();
 		System.out.println("End Time:: " + endTime);
 
