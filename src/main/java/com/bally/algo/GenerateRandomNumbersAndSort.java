@@ -53,7 +53,6 @@ public class GenerateRandomNumbersAndSort {
 	}
 
 	public static void mergeFile(List<File> listOfFiles, String fileName) throws IOException {
-		System.out.println("merge file::" + fileName);
 		List<BufferedReader> listOfBufferReader = new ArrayList<BufferedReader>();
 		BufferedWriter fbw = new BufferedWriter(new FileWriter(new File(fileName)));
 		try {
