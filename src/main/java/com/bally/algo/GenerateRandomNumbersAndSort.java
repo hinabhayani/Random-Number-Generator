@@ -2,7 +2,6 @@ package com.bally.algo;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -44,7 +43,7 @@ public class GenerateRandomNumbersAndSort {
 					listOfTempData.clear();
 					i++;
 				}
-			} catch (EOFException e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		} finally {
